@@ -155,7 +155,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
 	/**
 	 * logic that defines what transition the state machine should invoke as a
 	 * result of transition data provided. used by
-	 * <code>advance()<code> when given a transition data object.
+	 * <code>advance()</code> when given a transition data object.
 	 */
 	private final TransitionSelector<S> transitionSelector;
 
@@ -653,7 +653,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
 
     /**
      * load pre and post triggers
-     * @throws StateTransitionException
+     * @throws MalformedStateMachineException
      */
     public final void loadTriggers() throws MalformedStateMachineException {
         if (preTriggers == null) {

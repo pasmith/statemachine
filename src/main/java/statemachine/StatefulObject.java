@@ -27,7 +27,7 @@ public class StatefulObject extends BaseNamedObject {
 
 
     /**
-     * @param state
+     * @param name
      */
     protected StatefulObject(final String name) {
         super( name );

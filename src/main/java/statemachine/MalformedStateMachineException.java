@@ -11,26 +11,25 @@ public class MalformedStateMachineException extends Exception {
 	 * 
 	 */
 	public MalformedStateMachineException() {
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
-	 * @param arg0
+	 * @param reason
 	 */
 	public MalformedStateMachineException(String reason) {
 		super(reason);
 	}
 
 	/**
-	 * @param arg0
+	 * @param cause
 	 */
 	public MalformedStateMachineException(Throwable cause) {
 		super(cause);
 	}
 
 	/**
-	 * @param arg0
-	 * @param arg1
+	 * @param reason
+	 * @param cause
 	 */
 	public MalformedStateMachineException(String reason, Throwable cause) {
 		super(reason, cause);

@@ -87,8 +87,8 @@ public final class Assert {
 	}
 
 	/**
-	 * @param string
-	 * @param worker
+	 * @param comment
+	 * @param o
 	 */
 	public static void _assertNull(String comment, Object o) {
 		try {
@@ -167,7 +167,7 @@ public final class Assert {
 	/**
 	 * named counter
 	 * 
-	 * @param counter name
+	 * @param name counter name
 	 * @param condition
 	 */
 	public static void _assert(String name, boolean condition) {

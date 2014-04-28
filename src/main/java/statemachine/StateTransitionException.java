@@ -65,7 +65,7 @@ public class StateTransitionException extends Exception {
 
     /**
      * @param reason
-     * @param errors
+     * @param causes
      */
     public StateTransitionException(final String reason, final Throwable[] causes) {
         this(reason, causes != null && causes.length > 0 ? causes[0] : null );

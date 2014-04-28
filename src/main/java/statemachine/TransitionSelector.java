@@ -7,13 +7,12 @@ import java.util.Map;
  * @author patrick
  *
  * @param <S>
- * @param <IN>
  */
 public interface TransitionSelector<S extends StatefulObject> {
 
 	/**
-	 * @param logger
-	 * @param requestor
+	 * @param defaultTransition
+	 * @param validTransitions
 	 * @param obj
 	 * @param transitionData
 	 * @return
