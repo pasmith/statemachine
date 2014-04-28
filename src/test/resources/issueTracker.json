@@ -1,0 +1,83 @@
+{
+	// name of job type
+      "name": "Issue Tracker",
+            
+    // the custom selection logic that determines what transition to invoke when users claim and complete tasks
+      "transitionSelector" : "issues.StateTransitionSelector",
+      
+    // the state machine for this job
+      "transitions": [
+        {
+          "name": "submit",
+          "from": null,
+          "to": {
+            "name": "submitted"
+          }
+        },
+        {
+          "name": "open",
+          "from": [
+            "submitted"
+          ],
+          "to": {
+            "name": "opened"
+          }
+        },
+        {
+          "name": "resolve",
+          "from": [
+            "opened"
+          ],
+          "to": {
+            "name": "resolved"
+          },
+          "on" : { "completionStatus" : "completed" }
+        },
+        {
+          "name": "review",
+          "from": [
+            "resolved"
+          ],
+          "to": {
+            "name": "being reviewed"
+          }
+        },
+        {
+          "name": "close",
+          "from": [
+            "opened", "being reviewed"
+          ],
+          "to": {
+            "name": "closed"
+          },
+          "on" : {
+	              "opened" : { "completionStatus" : "withdrawn" },
+	              "being reviewed" : { "completionStatus" : "completed, violationReported", "previous.outcome" : "accepted" }
+              }
+        },
+        {
+          "name": "resubmit",
+          "from": [
+            "opened",
+            "being reviewed"
+          ],
+          "to": {
+            "name": "submitted"
+          },
+          "on" : {
+	              "opened" : { "completionStatus" : "skipped" },
+	              "being reviewed" : { "completionStatus" : "completed, violationReported", "previous.outcome" : "rejected" }
+              }
+        },
+        {
+          "name": "skip review",
+          "from": [
+            "being reviewed"
+          ],
+          "to": {
+            "name": "resolved"
+          },
+          "on" : { "completionStatus" : "skipped" }
+        }
+      ]
+}
