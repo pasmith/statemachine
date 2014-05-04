@@ -1,6 +1,7 @@
 package common;
 
 import static common.Utilities.isEmpty;
+import static common.Assert.*;
 
 
 /**
@@ -34,9 +35,7 @@ public class NamedObjectBuilder<B extends NamedObjectBuilder<?,O>, O extends Nam
      */
     @SuppressWarnings("unchecked")
     public final B withName (final String name) {
-        if( isEmpty( name ) ) {
-            throw new IllegalArgumentException( "name cannot be empty" );
-        }
+        _assert( "name cannot be empty", !isEmpty( name ) );
         this.name = name.trim();
         return (B) this;
     }
@@ -57,7 +56,7 @@ public class NamedObjectBuilder<B extends NamedObjectBuilder<?,O>, O extends Nam
     /**
      * check required fields
      */
-    protected void validate() {
+    protected void validate() {    	
         if( name == null ) {
             throw new IllegalStateException( "named object must have a name" );
         }

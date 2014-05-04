@@ -1,6 +1,7 @@
 package common;
 
 import static common.Utilities.isEmpty;
+import static common.Assert.*;
 
 import java.io.Serializable;
 
@@ -57,9 +58,7 @@ public class BaseNamedObject implements NamedObject, Serializable {
      */
     public BaseNamedObject(final String name, final String description) {
         super();
-        if( isEmpty( name ) ) {
-            throw new IllegalArgumentException( "name cannot be empty" );
-        }
+        _assert( "name cannot be null or empty", !isEmpty( name ) );
         this.name = name.trim();
         identifier = toKey( name );
         this.description = isEmpty(description) ? null : description.trim();
@@ -142,14 +141,4 @@ public class BaseNamedObject implements NamedObject, Serializable {
         return description;
     }
 
-    /**
-     * @param name
-     */
-    public final void setName(final String name) {
-        if( isEmpty( name ) ) {
-            throw new IllegalArgumentException( "name cannot be empty" );
-        }
-        this.name = name.trim();
-        identifier = toKey( name );
-    }
 }

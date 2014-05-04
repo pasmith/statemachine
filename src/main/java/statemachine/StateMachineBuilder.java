@@ -1,6 +1,7 @@
 package statemachine;
 
 import static common.Utilities.isEmpty;
+import static common.Assert.*;
 
 import java.io.Serializable;
 import java.util.Arrays;
