@@ -1,9 +1,6 @@
 {
 	// name of job type
       "name": "Issue Tracker",
-            
-    // the custom selection logic that determines what transition to invoke when users claim and complete tasks
-      "transitionSelector" : "issues.StateTransitionSelector",
       
     // the state machine for this job
       "transitions": [
@@ -30,54 +27,39 @@
           ],
           "to": {
             "name": "resolved"
-          },
-          "on" : { "completionStatus" : "completed" }
-        },
+          }
+        },        
         {
-          "name": "review",
+          "name": "close",
           "from": [
             "resolved"
           ],
           "to": {
-            "name": "being reviewed"
-          }
-        },
-        {
-          "name": "close",
-          "from": [
-            "opened", "being reviewed"
-          ],
-          "to": {
             "name": "closed"
           },
-          "on" : {
-	              "opened" : { "completionStatus" : "withdrawn" },
-	              "being reviewed" : { "completionStatus" : "completed, violationReported", "previous.outcome" : "accepted" }
-              }
+          "on" : { "decision" : "accept" }
         },
         {
           "name": "resubmit",
           "from": [
-            "opened",
-            "being reviewed"
+            "opened"
           ],
           "to": {
             "name": "submitted"
           },
           "on" : {
-	              "opened" : { "completionStatus" : "skipped" },
-	              "being reviewed" : { "completionStatus" : "completed, violationReported", "previous.outcome" : "rejected" }
-              }
+	              "opened" : { "completionStatus" : "skipped, expired" }
+          }
         },
         {
-          "name": "skip review",
+          "name": "reject",
           "from": [
-            "being reviewed"
+            "resolved"
           ],
           "to": {
-            "name": "resolved"
+            "name": "opened"
           },
-          "on" : { "completionStatus" : "skipped" }
+          "on" : { "decision" : "reject" }
         }
       ]
 }

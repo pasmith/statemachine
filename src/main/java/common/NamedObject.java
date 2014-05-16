@@ -18,6 +18,6 @@ public interface NamedObject extends Serializable {
      * name normalized into a canonical form
      * @return
      */
-    String getIdentifier();
+    String getId();
 
 }

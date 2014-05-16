@@ -7,7 +7,7 @@ import test.TestFixture;
  * @author patrick
  *
  */
-public class ChangeRequest extends StatefulObject implements TestFixture {
+public class ChangeRequest extends StatefulObject<ChangeRequest> implements TestFixture {
 	private static final long serialVersionUID = 1L;
 
 

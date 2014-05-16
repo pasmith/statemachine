@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,52 +30,8 @@ import common.BaseNamedObject;
  *            the stateful object type managed by this state machine
  *
  */
-public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
+public class StateMachine<S extends StatefulObject<S>> extends BaseNamedObject<StateMachine<S>> {
     private static final long serialVersionUID = 1L;
-
-    /**
-     * An action that the state machine can trigger before, during, are after a
-     * transition.
-     *
-     * <code>pre</code> triggers are used to validate a transition, or check
-     * permissions. If something is not valid, the trigger can fail the
-     * transition, which means that the transition does not occur, and the state
-     * remains unchanged.
-     *
-     * <code>post</code> triggers are used after a transition has occurred to
-     * chain other things, or initialize, or populate fields from the transition
-     * data.
-     *
-     * @author patrick
-     *
-     */
-    public interface Trigger<S extends StatefulObject, OUT> {
-        /**
-         * Call back that can be implemented to perform an action when a
-         * transition occurs.
-         *
-         * @param workflow
-         *            the state machine that governs the life cycle of the
-         *            object that is going through a state transition
-         * @param transition
-         *            the transition being invoked
-         * @param obj
-         *            the object going through the state transition
-         * @param transitionData
-         *
-         * @return <code>true</code> it pre-trigger should allow transition, <code>false</code> otherwise. ignored by post-trigger.
-         *
-         * @throws StateTransitionException
-         *             if errors occurred while trying to execute the trigger.
-         */
-        /**
-         * @param transition
-         * @param obj
-         * @param transitionData
-         * @throws StateTransitionException
-         */
-        OUT onTransition(String transition, S obj, Object... transitionData ) throws StateTransitionException;
-    }
 
     /*
      * State Definitions
@@ -186,10 +143,30 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
     private transient Map<String, Trigger<S, ?>>    postTriggers;
 
     /**
-     * shared provider from workflow component
+     * @param config
+     * @throws MalformedStateMachineException 
      */
-//    private transient Provider provider;
-
+    @SuppressWarnings("unchecked")
+	protected StateMachine ( Map<String,Serializable> config ) throws MalformedStateMachineException {
+    	this(
+    			(String) config.get( "name" ),
+    			(String) config.get( "description" ),
+    			(Map<String, String>) config.get( "stateNames" ),
+                (Map<String, String>) config.get( "stateDescriptions" ),
+                (Map<String, String>) config.get( "transitionNames" ),
+                (Map<String, String>) config.get( "transitionDescriptions" ),
+                (Map<String, Map<String,Object>>) config.get( "transitionProperties" ),
+                (String) config.get( "initialTransition" ),
+                (Set<String>) config.get( "initialTransitions" ),
+                (Map<String, Set<String>>) config.get( "validTransitions" ),
+                (Map<String, String>) config.get( "defaultTransitions" ),
+                (Map<String, String>) config.get( "targetStates" ),
+                (TransitionSelector<S>) config.get( "transitionSelector" ),
+                (Map<String, Class<Trigger<S,?>>>) config.get( "preTriggers" ),
+                (Map<String, Class<Trigger<S,?>>>) config.get( "postTriggers" )
+    	);
+    }
+    
     /**
      * Creates a state machine. Because the construction process is so
      * difficult, this is intended to be called only by the state machine
@@ -285,7 +262,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
                 .unmodifiableMap(new HashMap<String, String>(defaultTransitions));
 
         // define the pluggable transition selection logic
-        this.transitionSelector = transitionSelector;
+        this.transitionSelector = transitionSelector == null ? new DefaultStateTransitionSelector<S>() : transitionSelector;
 
         // define the transition triggers
         this.preTriggerRegistry = Collections
@@ -296,9 +273,9 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
                         postTriggers));
 
         // create trigger caches
-        this.preTriggers = new HashMap<String, StateMachine.Trigger<S,?>>(
+        this.preTriggers = new HashMap<String, Trigger<S,?>>(
                 preTriggerRegistry.size());
-        this.postTriggers = new HashMap<String, StateMachine.Trigger<S,?>>(
+        this.postTriggers = new HashMap<String, Trigger<S,?>>(
                 postTriggerRegistry.size());
 
         // try to initialize the cache of trigger instances
@@ -342,6 +319,33 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
     }
 
     /**
+     * @return
+     */
+    public final Map<String,Serializable> asGraph( Object... params ) {
+    	Map<String,Serializable> graph = new LinkedHashMap<String,Serializable>();
+		graph.put( "name", getName() );
+		graph.put( "description", getDescription() );
+		graph.put( "stateNames", (Serializable) getStateNames() );
+        graph.put( "stateDescriptions", (Serializable) getStateDescriptions() );
+        graph.put( "transitionNames", (Serializable) getTransitionNames() );
+        graph.put( "transitionDescriptions", (Serializable) getTransitionDescriptions() );
+        graph.put( "transitionProperties", new LinkedHashMap<>( transitionProperties ) );
+        graph.put( "initialTransition", getInitialTransition() );
+        graph.put( "initialTransitions", (Serializable) getInitialTransitions() );
+        graph.put( "validTransitions", new LinkedHashMap<>( validTransitions ) );
+        graph.put( "defaultTransitions", new LinkedHashMap<>( defaultTransitions ) );
+        graph.put( "targetStates", new LinkedHashMap<>( targetStates ) );
+        graph.put( "transitionSelector", transitionSelector.getClass().getName() );
+        if( !preTriggerRegistry.isEmpty() ) {
+        	graph.put( "preTriggers", (Serializable) getPreTriggers() );
+        }
+        if( !postTriggerRegistry.isEmpty() ) {
+        	graph.put( "postTriggers", (Serializable) getPostTriggers() );
+        }
+        return graph;
+    }
+
+	/**
      * template method that defines the transition sequence.
      *
      * @param statefulObject
@@ -353,7 +357,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
      *             if the transition failed
      */
     @SuppressWarnings("unchecked")
-	public final <IN,OUT> OUT invokeTransition(final String transition, final S statefulObject, final Object... transitionData) throws StateTransitionException {
+	public final <OUT> OUT invokeTransition(final String transition, final S statefulObject, final Object... transitionData) throws StateTransitionException {
         // 1. check to make sure that a transition is provided
         if (isEmpty(transition)) {
             throw new IllegalArgumentException("must specify a transition");
@@ -407,17 +411,24 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
 
             // execute the transitions and walk object to the default state
             // where the requested transition can be executed
+            OUT result = null;
             for (final String tr : path) {
-                invokeTransition(tr, statefulObject, transitionData);
+            	result = invokeTransition(tr, statefulObject, transitionData);
+                if( result != null ) {
+                	return result;
+                }
             }
         }
 
         // 6. perform pre-trigger to verify or validate transition
         // pre-requisites.
         if (preTriggers == null) {
-            preTriggers = new HashMap<String, StateMachine.Trigger<S,?>>( preTriggerRegistry.size());
+            preTriggers = new HashMap<String, Trigger<S,?>>( preTriggerRegistry.size());
         }
-		runTrigger(getTrigger(preTriggerRegistry, preTriggers, transitionKey), transitionKey, statefulObject, transitionData);
+        OUT result = this.<OUT>runTrigger(this.<OUT>getTrigger(preTriggerRegistry, preTriggers, transitionKey), transitionKey, statefulObject, transitionData);
+        if( result != null ) {
+        	return result;
+        }
 
 	    // 7. update the stateful object's state
 	    statefulObject.setCurrentState(getTargetStates().get(transitionKey));
@@ -425,7 +436,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
 	    // 8. perform post-trigger to notify that transition occurred
         // since transition has occurred, ...
         if (postTriggers == null) {
-            postTriggers = new HashMap<String, StateMachine.Trigger<S,?>>(postTriggerRegistry.size());
+            postTriggers = new HashMap<String, Trigger<S,?>>(postTriggerRegistry.size());
         }
         return (OUT) runTrigger(getTrigger(postTriggerRegistry, postTriggers, transitionKey), transitionKey, statefulObject, transitionData);
 
@@ -485,6 +496,32 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
     }
 
     /**
+     * @return
+     */
+    private final Map<String,String> getPreTriggers() {
+    	return extractTriggerClassNames(preTriggerRegistry);
+	}
+    
+    /**
+     * @return
+     */
+    private final Map<String,String> getPostTriggers() {
+    	return extractTriggerClassNames(postTriggerRegistry);
+	}
+   
+	/**
+	 * @param triggerRegistry
+	 * @return
+	 */
+	private final Map<String, String> extractTriggerClassNames( Map<String, Class<Trigger<S, ?>>> triggerRegistry ) {
+		Map<String,String> triggers = new LinkedHashMap<String,String>( triggerRegistry.size() );
+    	for( Entry<String, Class<Trigger<S, ?>>> trigger : triggerRegistry.entrySet() ) {
+    		triggers.put( trigger.getKey(), trigger.getValue().getName() );
+    	}
+		return triggers;
+	}
+	
+    /**
      * utility method that returns an instance of the trigger for the specified transition
      * @param registry
      * @param cache
@@ -539,7 +576,7 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
      * @throws Exception
      *             if the trigger execution failed
      */
-    private <IN,OUT> OUT runTrigger(final Trigger<S,OUT> trigger, final String transition, final S obj, final Object... transitionData) throws StateTransitionException {
+    private <OUT> OUT runTrigger(final Trigger<S,OUT> trigger, final String transition, final S obj, final Object... transitionData) throws StateTransitionException {
         // if a trigger has been defined for that transition
         if (trigger != null) {
             // run the trigger. if the transition is invalid, or not
@@ -651,23 +688,23 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
         return (transitions == null) || (transitions.size() == 0);
     }
 
-    /**
-     * load pre and post triggers
-     * @throws MalformedStateMachineException
-     */
-    public final void loadTriggers() throws MalformedStateMachineException {
-        if (preTriggers == null) {
-            preTriggers = new HashMap<String, StateMachine.Trigger<S,?>>(
-                    preTriggerRegistry.size());
-        }
-        loadTriggerCache(preTriggerRegistry, preTriggers);
-
-        if (postTriggers == null) {
-            postTriggers = new HashMap<String, StateMachine.Trigger<S,?>>(
-                    postTriggerRegistry.size());
-        }
-        loadTriggerCache(postTriggerRegistry, postTriggers);
-    }
+//    /**
+//     * load pre and post triggers
+//     * @throws MalformedStateMachineException
+//     */
+//    public final void loadTriggers() throws MalformedStateMachineException {
+//        if (preTriggers == null) {
+//            preTriggers = new HashMap<String, Trigger<S,?>>(
+//                    preTriggerRegistry.size());
+//        }
+//        loadTriggerCache(preTriggerRegistry, preTriggers);
+//
+//        if (postTriggers == null) {
+//            postTriggers = new HashMap<String, Trigger<S,?>>(
+//                    postTriggerRegistry.size());
+//        }
+//        loadTriggerCache(postTriggerRegistry, postTriggers);
+//    }
 
     /**
      * Provide default for transient fields here
@@ -676,10 +713,8 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    private void readObject(final java.io.ObjectInputStream in)
-            throws IOException, ClassNotFoundException {
+    private void readObject(final java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-
         preTriggers = null;
         postTriggers = null;
     }
@@ -690,28 +725,28 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
      * @return map of state names
      */
     public final Map<String, String> getStateNames() {
-        return stateNames;
+        return new LinkedHashMap<>( stateNames );
     }
 
     /**
      * @return
      */
     final Map<String, String> getStateDescriptions() {
-        return stateDescriptions;
+        return new LinkedHashMap<>( stateDescriptions );
     }
 
     /**
      * @return
      */
     final Map<String, String> getTransitionNames() {
-        return transitionNames;
+        return new LinkedHashMap<>( transitionNames );
     }
 
     /**
      * @return
      */
     final Map<String, String> getTransitionDescriptions() {
-        return transitionDescriptions;
+        return new LinkedHashMap<>( transitionDescriptions );
     }
 
     /**
@@ -725,14 +760,14 @@ public class StateMachine<S extends StatefulObject> extends BaseNamedObject {
      * @return
      */
     final Map<String, String> getTargetStates() {
-        return targetStates;
+        return new LinkedHashMap<>( targetStates );
     }
 
     /**
      * @return
      */
     final Set<String> getInitialTransitions() {
-        return initialTransitions;
+        return new LinkedHashSet<>( initialTransitions );
     }
 
     /**

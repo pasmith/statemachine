@@ -2,13 +2,11 @@ package issues;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import statemachine.StateMachine;
 import statemachine.StateMachineBuilder;
-import statemachine.TransitionSelector;
 import test.BaseTestCase;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -49,12 +47,7 @@ public class IssueTrackerTest extends BaseTestCase<StateMachine<ChangeRequest>, 
         final ObjectMapper mapper = new ObjectMapper();
         mapper.configure( JsonParser.Feature.ALLOW_COMMENTS, true );
         final Map<String,Serializable> config = mapper.readValue( String.class.getResourceAsStream( "/issueTracker.json" ) , LinkedHashMap.class );
-        final String name = (String) config.get("name");
-        final StateMachine<ChangeRequest> sm = new StateMachineBuilder<ChangeRequest,StateMachine<ChangeRequest>>()
-                .withTransitions( (List<Map<String, ?>>) config.get("transitions"))
-                .withTransitionSelector( (TransitionSelector<ChangeRequest>) Class.forName((String) config.get("transitionSelector")).newInstance() )
-                .withName(name).create();
-        return sm;
+        return new StateMachineBuilder<ChangeRequest, StateMachine<ChangeRequest>>().fromGraph( config ).create();
     }
 
     /* (non-Javadoc)
@@ -67,6 +60,42 @@ public class IssueTrackerTest extends BaseTestCase<StateMachine<ChangeRequest>, 
         stateMachine.initialize( changeRequest );
         assertEquals( "change requests should be in the 'submitted' state after they are received by the system.", "submitted", changeRequest.getCurrentState() );
         countStateTransitions.incrementAndGet();
+
+        // open the ticket
+        stateMachine.advance( changeRequest );
+        assertEquals( "change requests should be in the 'opened' state after they are advanced by the system.", "opened", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // open the ticket
+        stateMachine.invokeTransition( "resubmit", changeRequest);
+        assertEquals( "change requests should be in the 'submitted' state after they are skipped or expired.", "submitted", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // open the ticket (again)
+        stateMachine.advance( changeRequest );
+        assertEquals( "change requests should be in the 'opened' state after they are advanced by the system.", "opened", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // resolve the ticket
+        stateMachine.advance( changeRequest );
+        assertEquals( "change requests should be in the 'resolved' state after they are advanced by the system.", "resolved", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // reject the ticket (again)
+        stateMachine.invokeTransition( "reject", changeRequest );
+        assertEquals( "change requests should be in the 'opened' state after they have been rejected.", "opened", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // resolve the ticket - again
+        stateMachine.advance( changeRequest );
+        assertEquals( "change requests should be in the 'resolved' state after they are advanced by the system.", "resolved", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
+        // close the ticket
+        stateMachine.advance( changeRequest );
+        assertEquals( "change requests should be in the 'closed' state after they are advanced by the system.", "closed", changeRequest.getCurrentState() );
+        countStateTransitions.incrementAndGet();
+
     }
 
 }

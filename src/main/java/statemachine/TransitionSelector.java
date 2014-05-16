@@ -8,7 +8,7 @@ import java.util.Map;
  *
  * @param <S>
  */
-public interface TransitionSelector<S extends StatefulObject> {
+public interface TransitionSelector<S extends StatefulObject<?>> {
 
 	/**
 	 * @param defaultTransition

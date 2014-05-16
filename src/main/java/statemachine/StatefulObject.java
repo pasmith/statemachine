@@ -12,7 +12,7 @@ import common.BaseNamedObject;
  * @author patrick
  *
  */
-public class StatefulObject extends BaseNamedObject {
+public class StatefulObject<S extends StatefulObject<?>> extends BaseNamedObject<S> {
     private static final long serialVersionUID = 1L;
 
     /**

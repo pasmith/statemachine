@@ -1,7 +1,6 @@
 package statemachine;
 
 import static common.Utilities.isEmpty;
-import static common.Assert.*;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -16,8 +15,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import statemachine.StateMachine.Trigger;
-
 import common.NamedObjectBuilder;
 
 
@@ -29,7 +26,7 @@ import common.NamedObjectBuilder;
  *
  * @param <O> the object type to be managed by the state machine
  */
-public final class StateMachineBuilder<O extends StatefulObject, S extends StateMachine<O>> extends NamedObjectBuilder<StateMachineBuilder<O,S>,S> {
+public final class StateMachineBuilder<O extends StatefulObject<O>, S extends StateMachine<O>> extends NamedObjectBuilder<StateMachineBuilder<O,S>,S> {
 
     /*
      * printable labels and descriptions for states and transitions
@@ -680,6 +677,22 @@ public final class StateMachineBuilder<O extends StatefulObject, S extends State
            throw new IllegalArgumentException( "invalid trigger: " + triggerClass, e );
         }
     }
+
+
+	 /**
+	 * @param config
+	 * @return
+	 * @throws MalformedStateMachineException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
+	 */
+	@SuppressWarnings("unchecked")
+	public final StateMachineBuilder<O, S> fromGraph( Map<String, Serializable> config) throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedStateMachineException {
+       this.withTransitions( (List<Map<String, ?>>) config.get("transitions"))               
+           .withName((String) config.get("name"));
+       return this;
+	}
 
 
 }

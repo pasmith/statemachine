@@ -1,7 +1,7 @@
 package common;
 
+import static common.Assert._assert;
 import static common.Utilities.isEmpty;
-import static common.Assert.*;
 
 import java.io.Serializable;
 
@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author patrick
  *
  */
-public class BaseNamedObject implements NamedObject, Serializable {
+public abstract class BaseNamedObject<O extends BaseNamedObject<?>> implements NamedObject, Serializable, Comparable<O> {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -84,14 +84,14 @@ public class BaseNamedObject implements NamedObject, Serializable {
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
-    @Override public boolean equals(final Object other) {
+    @Override public final boolean equals(final Object other) {
         if( other == this ) {
             return true;
         } else {
             if( other instanceof BaseNamedObject ) {
                 return this.getClass().isAssignableFrom(other.getClass())   // other is a the same class, or a subclass of this object.
                                                                             // TODO this might violate the equals() contract - I think it has to be both ways
-                    && identifier.equalsIgnoreCase( ((BaseNamedObject)other).identifier ) ;
+                    && identifier.equalsIgnoreCase( ((BaseNamedObject<?>)other).identifier ) ;
             } else {
                 return false;
             }
@@ -101,7 +101,7 @@ public class BaseNamedObject implements NamedObject, Serializable {
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
-    @Override public int hashCode() {
+    @Override public final int hashCode() {
         return identifier.hashCode();
     }
 
@@ -128,7 +128,7 @@ public class BaseNamedObject implements NamedObject, Serializable {
      * @return the identifier for this object
      */
     @Override
-    public final String getIdentifier() {
+    public final String getId() {
         return identifier;
     }
 
@@ -141,4 +141,11 @@ public class BaseNamedObject implements NamedObject, Serializable {
         return description;
     }
 
+    /**
+     * @param o
+     * @return
+     */
+    @Override public final int compareTo(O other) {
+    	return other == null ? -1 : getId().compareTo( other.getId() );
+    }
 }
