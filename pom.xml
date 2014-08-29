@@ -4,15 +4,22 @@
 
 	<parent>
 		<groupId>spa</groupId>
-		<artifactId>parent-pom</artifactId>
+		<artifactId>local-deploy</artifactId>
 		<version>1.0</version>
 	</parent>
+	
 	<artifactId>statemachine</artifactId>
-	<packaging>jar</packaging>
 	<version>1.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
 	<dependencies>
-		<!-- test dependency -->
+		<!-- test dependencies -->
+		<dependency>
+			<groupId>spa</groupId>
+			<artifactId>test-harness</artifactId>
+			<version>1.0-SNAPSHOT</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
@@ -20,5 +27,5 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-	
+
 </project>
